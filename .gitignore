@@ -18,6 +18,7 @@ uploads
 
 # misc
 .env
+.env.example
 .DS_Store
 .env.local
 .env.development.local

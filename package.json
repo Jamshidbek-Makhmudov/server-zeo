@@ -101,6 +101,8 @@
     "babel-jest": "^29.7.0",
 "nodemon": "^2.0.7",
  "ts-jest": "^29.1.2",
+ "@jest/globals": "^29.7.0",
+ "@types/jest": "^29.5.12",
 "ts-node": "^10.9.1",
 "ts-toolbelt": "^9.6.0",
 "types": "*",
