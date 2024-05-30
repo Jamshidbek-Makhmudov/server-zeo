@@ -5,6 +5,7 @@ import express from "express";
 import morgan from "morgan";
 import { join } from "path";
 import { createConnection } from "./db";
+import Router from "./routes/router";
 
 const port =process.env.PORT || 8080;
 const baseUrl="/api";
@@ -35,6 +36,8 @@ const app = express();
     })
   );
 
+    app.use(baseUrl, Router);
+    
 		app.get("/health-check", (req, res) => {
 			res.sendStatus(200);
 		 })

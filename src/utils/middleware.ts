@@ -23,6 +23,7 @@ function readToken(req: Request, res: Response, next: NextFunction) {
   if (typeof token === "string") {
     req.token = token.replace("Bearer ", "");
   } else {
+    console.log("4");
     return res.sendStatus(401);
   }
 
@@ -40,6 +41,7 @@ export const checkToken = (req: Request, res: Response, next: NextFunction) => {
       req.userPermissions = permissions;
       req.userGroup = group;
     } catch (error) {
+      console.log("3");
       console.error(error);
       return res.sendStatus(403);
     }
@@ -54,9 +56,12 @@ export const checkRole =(...givenRoles: Role[])=> (req: Request, res: Response, 
         const user = await User.findOne({ _id: req.userId });
 
         if (!user?.seller) {
+          console.log("1");
+          
           return res.sendStatus(403);
         }
       } else if (!givenRoles.includes(req.userRole)) {
+        console.log("2");
         return res.sendStatus(403);
       }
 
