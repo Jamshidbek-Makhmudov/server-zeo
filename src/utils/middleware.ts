@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+import multer from "multer";
 import { User } from "../db/models/User";
 import { Role } from "./auth";
 import { TPermission } from "./permissions";
@@ -23,13 +24,17 @@ function readToken(req: Request, res: Response, next: NextFunction) {
   if (typeof token === "string") {
     req.token = token.replace("Bearer ", "");
   } else {
-    console.log("4");
-    return res.sendStatus(401);
+    //return res.sendStatus(401);
+     return res.status(401).json({
+      success: false,
+      message: "Invalid token",
+    });
   }
 
   next();
 }
-export const checkToken = (req: Request, res: Response, next: NextFunction) => {
+export const checkToken = (req: Request, res: Response, next: NextFunction) => { 
+  
   return readToken(req, res, () => {
     try {
       const { id, role, permissions, group, sellerId, numericalSellerId } =
@@ -41,9 +46,13 @@ export const checkToken = (req: Request, res: Response, next: NextFunction) => {
       req.userPermissions = permissions;
       req.userGroup = group;
     } catch (error) {
-      console.log("3");
       console.error(error);
-      return res.sendStatus(403);
+      //return res.sendStatus(403);
+      return res.status(403).json({
+      success: false,
+        message: "Access Forbidden Token",
+        description:"Invalid Token"
+    });
     }
 
     next();
@@ -56,17 +65,33 @@ export const checkRole =(...givenRoles: Role[])=> (req: Request, res: Response, 
         const user = await User.findOne({ _id: req.userId });
 
         if (!user?.seller) {
-          console.log("1");
-          
-          return res.sendStatus(403);
+         // return res.sendStatus(403);
+           return res.status(403).json({
+      success: false,
+         message: "Access Forbidden",
+        description:"Check Role"
+    });
         }
       } else if (!givenRoles.includes(req.userRole)) {
-        console.log("2");
-        return res.sendStatus(403);
+        //return res.sendStatus(403);
+         return res.status(403).json({
+      success: false,
+           message: "Access Forbidden",
+        description:"Check Role"
+    });
       }
 
       next();
     });
  };
 export const checkUser = checkRole(Role.user, Role.admin);
+export const checkAdmin = checkRole(Role.admin);
 
+export const fileUpload = multer({
+  storage: multer.diskStorage({
+    destination: "uploads/",
+    filename: function (req, file, cb) {
+      cb(null, file.originalname);
+    },
+  }),
+});

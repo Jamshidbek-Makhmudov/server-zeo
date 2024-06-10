@@ -4,6 +4,7 @@ import { sign, verify } from "jsonwebtoken";
 import { USER_PERMISSIONS } from "../constant";
 import { Role } from "./auth";
 import { TPermission } from "./permissions";
+import { _FilterQuery } from "mongoose";
 
 config();
 
@@ -59,3 +60,28 @@ export const constructRouteErrorWrapper = (
     }
   };
 };
+export async function paginator(req: Request, searchKeys: string[] = []) {
+  const search = req.query.search as string;
+  let filter = {} as _FilterQuery<any>; 
+
+  if (search) {
+    const condition = searchKeys.map((key) => ({
+      $regexMatch: {
+        input: { $toString: `$${key}` },
+        regex: `.*${search}*.`,
+        options:"i",
+      }
+    }))
+    filter.$expr = {$or:condition}
+    
+  }
+  const perPage = isNaN(Number(req.query.perPage)) ? 10 : Number(req.query.perPage);
+
+  const page=Math.max(0,Number(req.query.page)-1);
+  
+  return {
+    perPage,
+    page,
+    filter
+  }
+ };
