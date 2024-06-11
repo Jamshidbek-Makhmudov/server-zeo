@@ -1,0 +1,16 @@
+{
+  "name": "types",
+  "version": "1.0.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "lint": "eslint *.ts*",
+    "build": "tsc -p .",
+    "postinstall": "npm run build"
+  },
+  "devDependencies": {
+    "ts-node": "^10.8.1",
+    "tsconfig": "*",
+    "typescript": "^4.7.3"
+  }
+}
