@@ -1,12 +1,12 @@
 import { Schema, model } from "mongoose";
-import { Notification, Type } from "../../types/notification";
+import { Notification, Type } from "../../package/types";
+import {
+  PermissionScope,
+  PermissionType,
+  TPermission,
+} from "../../utils/permissions";
 import { Role } from "../../utils/auth";
 import { sendMail } from "../../utils/mail";
-import {
-	PermissionScope,
-	PermissionType,
-	TPermission,
-} from "../../utils/permissions";
 
 interface IVendorPermission {
   id: number;
