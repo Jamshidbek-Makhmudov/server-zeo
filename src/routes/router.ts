@@ -2,7 +2,7 @@ import express, { Router } from "express";
 import { Role } from "../utils/auth";
 import { checkAdmin, checkRole, checkToken, fileUpload } from "../utils/middleware";
 import { constructRouteErrorWrapper } from "../utils/shortcuts";
-import { createUser, deleteUser, getPaginatedUsers, loginUser, removeProfileImage, updatePassword, updateProfileImage  } from "./user";
+import { createUser, deleteUser, getJobs, getPaginatedUserHistory, getPaginatedUsers, loginUser, refreshTokens, removeProfileImage, updatePassword, updateProfileImage  } from "./user";
 
 const router: Router = express.Router();
 // router.post("/admin/register", constructRouteErrorWrapper(registerAdmin));
@@ -37,6 +37,19 @@ router.get(
   checkRole(Role.admin, Role.sellerAdmin),
   constructRouteErrorWrapper(getPaginatedUsers)
 );
+router.post("/user/refreshTokens", constructRouteErrorWrapper(refreshTokens));
+
+router.post("/getJobs", checkAdmin, constructRouteErrorWrapper(getJobs));
+router.get(
+  "/user/history",
+  checkRole(Role.admin, Role.sellerAdmin),
+  constructRouteErrorWrapper(getPaginatedUserHistory)
+);
+
+
+// reviews
+router.post("/addReview", constructRouteErrorWrapper(addReview));
+
 export default router;
 
 

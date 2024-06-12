@@ -3,10 +3,38 @@ import { Request, Response } from "express";
 import * as _ from "lodash";
 import { User } from "../db/models/User";
 import { Role } from "../utils/auth";
-import { createToken, paginator } from "../utils/shortcuts";
+import { createToken, paginator, verifyToken } from "../utils/shortcuts";
 import { getUserById } from "./marketplace";
 import { deleteObectInS3, getPathInS3 } from "../utils/aws";
 import { getPath } from "./countryManagement";
+import { getAllJobs } from "../utils/cron";
+import { Marketplace } from "../db/models/Marketplace";
+import { DateTime } from "luxon";
+import { UserHistory } from "../db/models/UserHistory";
+
+export const refreshTokens = async (req: Request, res: Response) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.sendStatus(400)
+  }
+  const payload = verifyToken(refreshToken, true)
+
+  const user = (await User.findOne({ _id: payload.id }).populate("group seller")) as any;
+
+  if (!user) {
+    res.sendStatus(404);
+  }
+  
+  if (user.role !== Role.admin && !user.isActive) {
+    return res.sendStatus(401)
+   }
+  
+  //todo
+
+  
+  return "ok"
+ }
 
 export const registerAdmin = async (req: Request, res: Response) => {
   const { email, password, username } = req.body;
@@ -226,7 +254,7 @@ export async function getUsersWithConfig(req: Request) {
     lastPage: Math.ceil(total / Number(perPage)),
   };
 }
-//todo
+//TODO
 export async function updateProfileImage(req: Request, res: Response) {
   const user = await User.findOne({ _id: req.userId }).select("profileImage");
   if (user?.profileImage) {
@@ -237,7 +265,7 @@ export async function updateProfileImage(req: Request, res: Response) {
   //  return res.send(profileImage);
 return "ok"
   }
-
+//TODO
 export async function removeProfileImage(req: Request, res: Response) {
   const user = await User.findOne({ _id: req.userId }).select("profileImage");
   
@@ -261,4 +289,63 @@ export async function deleteUser(req: Request, res: Response) {
 export async function getPaginatedUsers(req: Request, res: Response) {
 
   return res.json(await getUsersWithConfig(req))
- }
+}
+
+export async function getJobs(_: Request, res: Response) {
+  const jobs = await getAllJobs();
+
+  const hydratedJobs = await Promise.all(jobs.map(async (x) => await Marketplace.findOne({ _id: x.id })))
+  return res.json({
+    success: true,
+    message: "Jobs fetched successfully",
+    data: {
+      jobs: hydratedJobs
+    }
+  })
+  
+}
+export async function getUserHistoryWithConfig(req: Request) {
+  const { filter, perPage, page } = await paginator(req, [
+    "text"
+  ]);
+
+  let filterConfig = { ...filter };
+  const { user, type, created } = req.query;
+  if (typeof user === "string" && user !== "All users") {
+    filterConfig = {
+      user,
+      ...filterConfig,
+    };
+  }
+  if (typeof type === "string" && type !== "All types") {
+    filterConfig = {
+      type,
+      ...filterConfig,
+    };
+  }
+  if (typeof created === "string") {
+    filterConfig = {
+      created: { $gte: DateTime.fromMillis(Number(created)).toISODate() },
+      ...filterConfig,
+    };
+  }
+  
+  const total = await UserHistory.countDocuments(filterConfig as any);
+
+  const data = await UserHistory.find(filterConfig as any)
+    .limit(perPage)
+    .skip(perPage * page)
+    .populate("user", "_id username profileImage", User)
+    .sort({ created: -1 });
+  return {
+    data,
+    perPage,
+    page,
+    total,
+    lastPage: Math.ceil(total / Number(perPage))
+  }
+}
+
+export async function getPaginatedUserHistory(req: Request, res: Response) {
+  // return res.json(await getUserHistoryWithConfig(req));
+}
