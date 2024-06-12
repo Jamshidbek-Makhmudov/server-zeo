@@ -1,8 +1,16 @@
 import express, { Router } from "express";
 import { Role } from "../utils/auth";
-import { checkAdmin, checkRole, checkToken, fileUpload } from "../utils/middleware";
+import {
+  checkAdmin, checkPermission, checkReadOnly, checkRole,
+  checkSellerAdmin, checkToken, fileUpload, withVendorPermissions
+} from "../utils/middleware";
 import { constructRouteErrorWrapper } from "../utils/shortcuts";
-import { createUser, deleteUser, getJobs, getPaginatedUserHistory, getPaginatedUsers, loginUser, refreshTokens, removeProfileImage, updatePassword, updateProfileImage  } from "./user";
+import { createUser, deleteUser, getJobs, getPaginatedUserHistory, getPaginatedUsers, loginUser, refreshTokens, removeProfileImage, updatePassword, updateProfileImage } from "./user";
+import {
+  addReview, BulkImport, deleteReview, getReviews,
+  getReviewsBySky,
+  updateReview
+} from "./reviews";
 
 const router: Router = express.Router();
 // router.post("/admin/register", constructRouteErrorWrapper(registerAdmin));
@@ -49,7 +57,22 @@ router.get(
 
 // reviews
 router.post("/addReview", constructRouteErrorWrapper(addReview));
-
+router.get("/reviews/:sku", constructRouteErrorWrapper(getReviewsBySky));
+router.put(
+  "/reviews/:id",
+  checkReadOnly,
+  constructRouteErrorWrapper(updateReview)
+);
+router.delete(
+  "/reviews/:id",
+  checkReadOnly,
+  constructRouteErrorWrapper(deleteReview)
+);
+// router.post(
+//   "/reviews/bulk-import",
+//   [checkReadOnly, fileUpload.single("file")],
+//   constructRouteErrorWrapper(BulkImport)
+// );
 export default router;
 
 

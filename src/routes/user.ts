@@ -254,18 +254,15 @@ export async function getUsersWithConfig(req: Request) {
     lastPage: Math.ceil(total / Number(perPage)),
   };
 }
-//TODO
 export async function updateProfileImage(req: Request, res: Response) {
   const user = await User.findOne({ _id: req.userId }).select("profileImage");
   if (user?.profileImage) {
     await deleteObectInS3(user.profileImage);
   }
    const profileImage = getPathInS3(await getPath(req.file));
-  //  await User.updateOne({ _id: req.userId }, { profileImage });
-  //  return res.send(profileImage);
-return "ok"
+   await User.updateOne({ _id: req.userId }, { profileImage });
+   return res.send(profileImage);
   }
-//TODO
 export async function removeProfileImage(req: Request, res: Response) {
   const user = await User.findOne({ _id: req.userId }).select("profileImage");
   
@@ -273,10 +270,9 @@ export async function removeProfileImage(req: Request, res: Response) {
     await deleteObectInS3(user.profileImage);
   }
 
-  // const data = await User.updateOne({ _id: req.userId }, {profileImage:""});
-  //  await User.findOneAndUpdate({_id: req.userId}, {profileImage:""});
-  //  return res.statusCode(200);
-  return "ok";
+  const data = await User.updateOne({ _id: req.userId }, {profileImage:""});
+   await User.findOneAndUpdate({_id: req.userId}, {profileImage:""});
+   return res.statusCode(200);
 }
  
 export async function deleteUser(req: Request, res: Response) {
@@ -347,5 +343,5 @@ export async function getUserHistoryWithConfig(req: Request) {
 }
 
 export async function getPaginatedUserHistory(req: Request, res: Response) {
-  // return res.json(await getUserHistoryWithConfig(req));
+  return res.json(await getUserHistoryWithConfig(req));
 }
