@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import geoip from "geoip-lite";
 import { Review } from "../db/models/Review";
-// import { promises as asyncFs } from "fs";
-// import csv from "csvtojson";
+import { promises as asyncFs } from "fs";
+import csv from "csvtojson";
  import { paginator } from "../utils/shortcuts";
 import { MarketplaceProduct } from "../db/models/MarketplaceProduct";
 
@@ -180,4 +180,70 @@ export async function deleteReview(req: Request, res: Response) {
 	await review.remove();
 
 	return res.sendStatus(200);
+}
+export const reviewWhitelist = [
+	"sku",
+	"origin",
+	"name",
+	"title",
+	"content",
+	"rating",
+	"country",
+];
+export function isReview(review: any) {
+	try {
+		const keys = Object.keys(review);
+		reviewWhitelist.forEach((x) => {
+			if (!keys.includes(x)) {
+				return false;
+			}
+		});
+	} catch (error) {
+		return false;
+	}
+	return true;
+}
+export async function BulkImport(req: Request, res: Response) {
+	const { file } = req;
+
+	if (!["image/svg+xml", "text/csv"].includes(file!.mimetype)) {
+		return res.status(500).json({
+			message: "File mimetype rejected",
+		});
+	}
+
+	const reviews = await csv({ delimiter: ";" }).fromFile(file!.path);
+	const report = {
+		uploaded: reviews.length,
+		succeded: 0,
+		rejected: 0,
+	};
+
+	await Promise.all(
+		reviews.map(async (review: any) => {
+			try {
+				if (!isReview(review)) {
+					throw new Error("Review rejected");
+				}
+
+				const reviewObject = {} as any;
+				reviewWhitelist.map((key) => (reviewObject[key] = review[key]));
+				const reviewToStore = new Review(reviewObject);
+				await reviewToStore.save();
+				report.succeded++;
+			} catch (error) {
+				console.error(error);
+				report.rejected++;
+			}
+		})
+	);
+	asyncFs.unlink(file!.path);
+	return res.json({
+		success: true,
+		report,
+	});
+
+}
+export async function getReviews(req: Request, res: Response) {
+	return res.json(await getReviewsWithConfig(req));
 }

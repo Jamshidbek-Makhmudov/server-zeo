@@ -5,7 +5,11 @@ import {
   checkSellerAdmin, checkToken, fileUpload, withVendorPermissions
 } from "../utils/middleware";
 import { constructRouteErrorWrapper } from "../utils/shortcuts";
-import { createUser, deleteUser, getJobs, getPaginatedUserHistory, getPaginatedUsers, loginUser, refreshTokens, removeProfileImage, updatePassword, updateProfileImage } from "./user";
+import {
+  cancelRequest, changeStatus, closeNotification, createNotification, createRequest, createUser, deleteUser, forgotPassoword, generateMFACode, getAdminNames, getJobs, getOfferCounts,
+  getOfferImportReports, getPaginatedNotifications, getPaginatedRequests,
+  getPaginatedUserHistory, getPaginatedUsers, getPreviewLink, getProductCounts, getProductImportReport, getProductImportReports, getTicketNotifications, getUnreadOfferImportReport, getUnreadProductImportReport, getUserNotifications, importNewProducts, isAdmin, loginMFA, loginUser, productManipulation, readAllTicketNotifications, readAllUserNotifications, readNotification, readOfferImportReport, readProductImportReport, refreshTokens, removeProfileImage, resetPassoword, updatePassword, updateProfileImage, updateUser
+} from "./user";
 import {
   addReview, BulkImport, deleteReview, getReviews,
   getReviewsBySky,
@@ -13,20 +17,18 @@ import {
 } from "./reviews";
 
 const router: Router = express.Router();
-// router.post("/admin/register", constructRouteErrorWrapper(registerAdmin));
-router.post("/user/login", constructRouteErrorWrapper(loginUser));
 router.post(
   "/user/changePassword",
   checkAdmin,
   constructRouteErrorWrapper(updatePassword)
 );
-//todo
+
 router.post(
   "/user/image",
   [checkToken, fileUpload.single("file")],
   constructRouteErrorWrapper(updateProfileImage)
 );
-//todo
+
 router.delete(
   "/user/image",
   checkToken,
@@ -45,7 +47,7 @@ router.get(
   checkRole(Role.admin, Role.sellerAdmin),
   constructRouteErrorWrapper(getPaginatedUsers)
 );
-router.post("/user/refreshTokens", constructRouteErrorWrapper(refreshTokens));
+
 
 router.post("/getJobs", checkAdmin, constructRouteErrorWrapper(getJobs));
 router.get(
@@ -68,11 +70,23 @@ router.delete(
   checkReadOnly,
   constructRouteErrorWrapper(deleteReview)
 );
-// router.post(
-//   "/reviews/bulk-import",
-//   [checkReadOnly, fileUpload.single("file")],
-//   constructRouteErrorWrapper(BulkImport)
-// );
+router.post(
+  "/reviews/bulk-import",
+  [checkReadOnly, fileUpload.single("file")],
+  constructRouteErrorWrapper(BulkImport)
+);
+router.get("/reviews", checkReadOnly, constructRouteErrorWrapper(getReviews));
+
+// authentication
+router.post("/user/login", constructRouteErrorWrapper(loginUser));
+// router.post('/admin/register', constructRouteErrorWrapper(registerAdmin));
+router.post("/user/refreshTokens", constructRouteErrorWrapper(refreshTokens));
+// forgot passwd
+router.post("/user/forgot", constructRouteErrorWrapper(forgotPassoword));
+// reset passwd
+router.post("/user/reset", constructRouteErrorWrapper(resetPassoword));
+// send mfa code
+router.post("/user/mfa", constructRouteErrorWrapper(generateMFACode));//todo
+// mfa login
+router.post("/user/login/mfa", constructRouteErrorWrapper(loginMFA)); //todo
 export default router;
-
-

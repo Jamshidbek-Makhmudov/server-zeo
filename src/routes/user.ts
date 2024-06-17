@@ -345,3 +345,96 @@ export async function getUserHistoryWithConfig(req: Request) {
 export async function getPaginatedUserHistory(req: Request, res: Response) {
   return res.json(await getUserHistoryWithConfig(req));
 }
+
+
+const DEFAULT_BASE_URL = "https://portal.vinuus.com";
+const ZEOOS_BASE_URL = "https://admin.zeoos.com";
+
+export async function forgotPassoword(req: Request, res: Response) {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: "Provide email",
+    });
+  }
+
+  const user: any = (await User.findOne({ email })) as any;
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found",
+    });
+  }
+
+  const token = createToken(user, "2h", false);
+
+  // excplicitly strict way instead of directly setting it from the request
+  const baseUrl = req.body.src === "zeoos" ? ZEOOS_BASE_URL : DEFAULT_BASE_URL;
+
+  try {
+    await sendMail(
+      user.email,
+      `Redefinição de senha!`,
+      `
+			<p>Olá, <strong>${user.username}</strong>.
+			Este e-mail refere-se à solicitação de redefinição de senha realizada
+			em nosso site em ${new Date().toLocaleString()}.
+			Para trocar sua senha, clique no link abaixo:</p>
+
+			<h3><a href="${baseUrl}/login/resetpass/${token}">redefinir senha</a></h3>
+
+			<p>Caso não tenha feito essa solicitação, basta ignorar esta mensagem.</p>
+		`
+    );
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.response,
+    });
+  }
+
+  return res.json({
+    success: true,
+    message:
+      "Em breve, receberás um link no email informado para redefinir sua senha",
+    data: {},
+  });
+}
+export async function resetPassoword(req: Request, res: Response) {
+  const { token, newPass, newPass2 } = req.body;
+
+  if (!token || !newPass !== !newPass2) {
+    return res.status(400).json({
+      success: false,
+      message: "Provide all required fields",
+      data: {},
+    });
+  }
+  try {
+    var payload = verifyToken(token, false);
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: "Invalid or expired link",
+      data: {},
+    });
+  }
+  const user = (await User.findOne({ _id: payload.id })) as any;
+
+  user.password = await hash(newPass, 12);
+
+  await user.save();
+
+  return res.json({
+    success: true,
+    message: "Your password has been reset",
+    data: {},
+  });
+
+
+
+
+ }
