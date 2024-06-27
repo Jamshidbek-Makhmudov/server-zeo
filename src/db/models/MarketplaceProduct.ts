@@ -1,9 +1,9 @@
 import { Schema, model } from "mongoose";
-import { Marketplace } from "./Marketplace";
+import { Marketplace } from "./Marketplace"; //check
 import elastic, { transformMongoToElasticFilter } from "../../utils/elastic";
-import { UnregisteredProduct } from "./seller/UnregisteredProduct";
+import { UnregisteredProduct } from "./seller/UnregisteredProduct"; //check
 import { omit } from "lodash";
-import { Product } from "./ProductInfo";
+import { Product } from "./ProductInfo"; //check
 
 const marketplaceProduct = new Schema(
   {},

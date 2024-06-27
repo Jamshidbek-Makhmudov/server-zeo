@@ -83,7 +83,8 @@ export const checkRole =(...givenRoles: Role[])=> (req: Request, res: Response, 
 
       next();
     });
- };
+};
+export const checkReadOnly = checkToken;
 export const checkUser = checkRole(Role.user, Role.admin);
 export const checkAdmin = checkRole(Role.admin);
 
