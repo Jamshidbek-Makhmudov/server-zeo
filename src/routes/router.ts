@@ -86,7 +86,40 @@ router.post("/user/forgot", constructRouteErrorWrapper(forgotPassoword));
 // reset passwd
 router.post("/user/reset", constructRouteErrorWrapper(resetPassoword));
 // send mfa code
-router.post("/user/mfa", constructRouteErrorWrapper(generateMFACode));//todo
+router.post("/user/mfa", constructRouteErrorWrapper(generateMFACode));
 // mfa login
-router.post("/user/login/mfa", constructRouteErrorWrapper(loginMFA)); //todo
+router.post("/user/login/mfa", constructRouteErrorWrapper(loginMFA));
+// get store url by IP address
+router.get(
+  "/shopify/url",
+  constructRouteErrorWrapper(async (req: Request, res: Response) => {
+    const result = geoip.lookup(req.clientIp || req.ip.replace("::ffff:", ""));
+
+    // if (!result) {
+    // 	console.log("req.clientIp", req.clientIp);
+    // 	console.log("req.ip", req.ip);
+    // 	return res.sendStatus(400);
+    // }
+
+    const supportedCountries = ["pt", "es", "nl", "fr", "uk", "de", "it", "be"];
+    const domainCode =
+      supportedCountries.find((x) => x === result?.country.toLowerCase()) ||
+      "com";
+
+    return res.json({
+      country: result?.country,
+      target: `https://vinuus.${domainCode}`,
+    });
+  })
+);
+router.post(
+  "/createMarketplace",
+  [checkAdmin, fileUpload.single("file")],
+  constructRouteErrorWrapper(createMartketplace)
+);
+router.get(
+  "/getAllMarketplaces",
+  checkAdmin,
+  constructRouteErrorWrapper(readMarketplaces)
+);
 export default router;

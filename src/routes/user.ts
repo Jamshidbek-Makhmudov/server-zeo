@@ -434,7 +434,114 @@ export async function resetPassoword(req: Request, res: Response) {
     data: {},
   });
 
+}
+export function generatePassword(len: number) {
+  let password = "";
+  const symbols =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!№;%:?*()_+=";
+  for (let i = 0; i < len; i++) {
+    passwoed += symbols.chartAt(Math.floor(Math.random() * symbols.length));
+   }
 
 
+ };
+export async function generateMFACode(req: Request, res: Response) {
+  const { email } = req.body;
 
- }
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: "Provide email.",
+    });
+  }
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found.",
+    });
+  }
+  const password = await generatePassword(10);
+  await new VerifyCode({
+    code: password,
+    userId:user._id
+  }).save();
+  try { 
+    await sendMail(
+      user.email,
+      `Confirmation code!`,
+      `
+      <p>Hello, <strong>${user.username}</strong>.
+      This email refers to a login confirmation request made on our website at ${new Date().toLocaleString()}.
+      To access, copy the code below:</p>
+      
+      <h3>${password}</h3>
+      
+      <p>If you have not made this request, simply ignore this message.</p>.
+      `
+    )  
+  } catch (error:any) {
+
+    return res.status(500).json({
+      success: false,
+      message: error.response,
+    })
+  }
+  
+  return res.json({
+    success: true,
+    message: "You will soon receive a specified email code to log into your account.",
+    data: {},
+  })
+
+}
+ 
+export async function loginMFA(req: Request, res: Response) {
+  const { code } = req.body;
+
+  if (!code) {
+    return res.status(400).json({
+      success: false,
+      message: "The code is not defined.",
+    });
+  }
+
+  const verifyCode = await VerifyCode.findOne({ code });
+
+  if (!verifyCode) {
+    return res.status(404).json({
+      success: false,
+      message: "Check if the code was not found, try again",
+    });
+  }
+  const now = DateTime.now();
+  const momentsLater = DateTime.fromJSDate(verifyCode.created as any);
+  const diff = now.diff(monestsLLater, "minutes");
+  if (diff > 10) {
+    return res.status(404).json({
+      success: false,
+      message: "Timeout, request code again",
+    });
+  }
+  const user = (await User.findOne({ _id: verifyCode.userId }).populate("group")) as any;
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found",
+    });
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: "received",
+    data: {
+      user: {
+        ...user._doc,
+        accessToken: createToken(user, "1d", false)
+      },
+      refreshToken: createToken(user, "7d")
+    }
+  });
+
+}
