@@ -15,6 +15,8 @@ import { getPath } from "./countryManagement";
 import { Marketplace } from "../db/models/Marketplace";
 import { UserHistory } from "../db/models/UserHistory";
 import { PermissionScope } from "../utils/permissions";
+import { paginator } from "../utils/shortcuts";
+import * as MarketplaceUtils from "../utils/marketplace";
 
 export const defaultMarketplaceDtoProperties = [
   `_id`,
@@ -97,4 +99,133 @@ export const createMartketplace = async (req: Request, res: Response) => {
     message: `Marketplace is now created`,
     data: marketplace,
   });
+};
+export const readMarketplaces = async (req: Request, res: Response) => {
+  const pageOptions = {
+    page: Number(req.query.page) ||1,
+    limit:Number(req.query.limit) ||10,
+  };
+  
+  const marketplace:any = await Marketplace.find()
+    .skip((pageOptions.page - 1) * pageOptions.limit)
+    .limit(pageOptions.limit)
+  const totalResults = await Marketplace.countDocuments();
+  return res.json({
+    success: true,
+    message:'all marketplaces',
+    data: {
+      data: marketplace,
+      currentPage: pageOptions.page,
+      limit: pageOptions.limit,
+      totalResults,
+      lastPage: Math.ceil(totalResults / pageOptions.limit),
+    }
+  });
+  
+};
+export async function getMarketplacesWithConfig(req: Request) {
+  const { filter, perPage, page } = await paginator(req, [
+    "marketplaceName",
+    "type",
+    "zeoosName",
+    "country",
+  ]);
+
+  let filterConfig = { ...filter };
+
+  const { platformName: zeoosName, type, country } = req.query;
+
+  if (req.userRole !== Role.admin) {
+    filterConfig.active = true;
+  }
+
+  if (typeof zeoosName === "string" && zeoosName !== "All platforms") {
+    filterConfig.zeoosName = zeoosName;
+  }
+
+  if (typeof type === "string" && type !== "All types") {
+    filterConfig.type = type;
+  }
+
+  if (typeof country === "string" && country !== "All countries") {
+    filterConfig.country = country;
+  }
+
+  const total = await Marketplace.countDocuments(filterConfig as any);
+
+  const toSelect =
+    req.userRole === Role.admin
+      ? defaultMarketplaceDtoProperties
+      : without(defaultMarketplaceDtoProperties, "credentials");
+
+  const data = await Marketplace.find(filterConfig as any)
+    .select(toSelect.join(" "))
+    .limit(perPage)
+    .skip(perPage * page)
+    .sort({ created: -1 });
+
+  return {
+    data,
+    perPage,
+    page,
+    total,
+    lastPage: Math.ceil(total / Number(perPage)),
+  };
+}
+
+export const getMarketplacesAdmin = async (req: Request, res: Response) => {
+  return res.json(await getMarketplacesWithConfig(req));
+};
+export const getSanitizedMarketplaces = async (req: Request, res: Response) => {
+  const marketplaces: any = await Marketplace.find(
+    // req.userRole === Role.admin ? {} :
+    { active: true }
+  );
+
+  return res.json({
+    success: true,
+    message: `All the marketplaces`,
+    data: {
+      data: marketplaces.map((x: any) =>
+        getMarketplaceDto(
+          x,
+          defaultMarketplaceDtoProperties.filter((z) => z !== "credentials")
+        )
+      ),
+    },
+  });
+};
+export async function getMarketplaceByZeoosName(
+  zeoosName: string,
+  sanitize = true
+) {
+  const marketplace = await Marketplace.findOne({ zeoosName });
+  return sanitize ? getMarketplaceDto(marketplace) : marketplace;
+}
+
+export const readMarketplace = async (req: Request, res: Response) => {
+  return res.json({
+    success: true,
+    message: `Data on Marketplace:`,
+    data: await getMarketplaceByZeoosName(
+      req.params.zeoosName,
+      Role.admin !== req.userRole
+    ),
+  });
+};
+
+export async function findById(req: Request, res: Response) {
+  const select =
+    Role.admin !== req.userRole
+      ? defaultMarketplaceDtoProperties.join(",")
+      : "";
+ 
+  const marketplace = await Marketplace.findOne({ _id: req.params.id }).select(
+    select
+  );
+  return res.json(marketplace);
+}
+export const replicatePrices = async (req: Request, res: Response) => {
+  MarketplaceUtils.replicateMarketplacePrices(req.userId);
+  return res.sendStatus(200);
 };

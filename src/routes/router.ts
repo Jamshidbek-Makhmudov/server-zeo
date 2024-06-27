@@ -122,4 +122,33 @@ router.get(
   checkAdmin,
   constructRouteErrorWrapper(readMarketplaces)
 );
+
+router.get(
+  "/getAllMarketplaces/admin",
+  checkPermission(
+    { scope: PermissionScope.platforms, type: PermissionType.read },
+    [Role.admin, Role.sellerAdmin]
+  ),
+  constructRouteErrorWrapper(getMarketplacesAdmin)
+);
+router.get(
+  "/getMarketplaces",
+  checkReadOnly,
+  constructRouteErrorWrapper(getSanitizedMarketplaces)
+);
+router.get(
+  "/marketplace/:zeoosName",
+  checkReadOnly,
+  constructRouteErrorWrapper(readMarketplace)
+);
+router.get(
+  "/v2/marketplace/:_id",
+  checkReadOnly,
+  constructRouteErrorWrapper(MarketplaceRouter.findById)
+);
+router.put(
+  "/marketplace/replicatePrices",
+  checkAdmin,
+  constructRouteErrorWrapper(replicatePrices)
+);
 export default router;
