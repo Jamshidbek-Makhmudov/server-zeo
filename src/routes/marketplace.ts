@@ -229,3 +229,73 @@ export const replicatePrices = async (req: Request, res: Response) => {
   MarketplaceUtils.replicateMarketplacePrices(req.userId);
   return res.sendStatus(200);
 };
+export const updateMarketplace = async (req: Request, res: Response) => {
+  const { zeoosName } = req.params;
+  let data = req.body;
+
+  if (typeof data.credentials === "string") {
+    data.credentials = JSON.parse(data.credentials);
+  }
+
+  if (req.file) {
+    data = {
+      ...data,
+      marketplaceImg: getPathInS3(
+        await getPath(req.file, "assets", data.zeoosName)
+      ),
+    };
+  }
+
+  const marketplace: any = await Marketplace.findOne({ zeoosName });
+
+  if (!marketplace) {
+    return res.status(404).json({
+      success: false,
+      message: "Marketplace does not exist",
+    });
+  }
+
+  const updatedMarketplace = getMarketplaceDto(data);
+
+  Object.keys(updatedMarketplace).map((key: string) => {
+    marketplace[key] = (updatedMarketplace as any)[key];
+  });
+
+  await marketplace.save();
+
+  return res.json({
+    success: true,
+    message: `Marketplace is now updated`,
+    data: marketplace,
+  });
+};
+
+export const updateMarketplacesByMplcName = async (
+  req: Request,
+  res: Response
+) => {
+  const { marketplaceName } = req.params;
+
+  await Marketplace.updateMany({ marketplaceName }, { rate: req.body });
+
+  return res.sendStatus(200);
+};
+export const deleteMarketplace = async (req: Request, res: Response) => {
+  const { zeoosName } = req.params;
+
+  const marketplace: any = await Marketplace.findOne({ zeoosName });
+
+  if (!marketplace) {
+    return res.status(404).json({
+      success: false,
+      message: "Marketplace does not exist",
+    });
+  }
+
+  await marketplace.remove();
+
+  return res.json({
+    success: true,
+    message: `Marketplace is now deleted`,
+  });
+};

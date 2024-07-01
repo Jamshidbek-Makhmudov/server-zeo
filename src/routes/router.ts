@@ -151,4 +151,19 @@ router.put(
   checkAdmin,
   constructRouteErrorWrapper(replicatePrices)
 );
+router.put(
+  "/marketplace/:zeoosName",
+  [checkAdmin, fileUpload.single("file")],
+  constructRouteErrorWrapper(updateMarketplace)
+);
+router.put(
+  "/marketplaces/:marketplaceName",
+  checkAdmin,
+  constructRouteErrorWrapper(updateMarketplacesByMplcName)
+);
+router.delete(
+  "/marketplace/:zeoosName",
+  checkAdmin,
+  constructRouteErrorWrapper(deleteMarketplace)
+);
 export default router;
